@@ -1,0 +1,62 @@
+Devin Sills
+CS 542
+
+PROGRAM ARCHITECTURE
+Language: java
+Compiling: javac -d classes *.java
+Playing -- Self-Play: java -cp classes mc.Game --white ab:1:6500 --black ab:1:6500
+Playing -- Internet Play: java -cp classes mc.InternetPlayer --color ? --username X --password Y --movetime 6500 --type accept --game 123
+Playing -- Internet Play: java -cp classes mc.InternetPlayer --color ? --username X --password Y --movetime 6500 --type offer
+
+My mini-chess player uses standard java io and utility classes. Everything else is hand-crafted to play mini-chess. I use piece lists 
+for black and white and store positions as a hash of (row + 1) * 16 + column to speed up position look-ups. The board representation 
+is straightforward. I use 3 hashes: blackHash, whiteHash, emptyHash to collectively store the board. There are also 2 dynamic hashes 
+that leverage java's pass-reference-by-value semantics to dynamically assign sideOnMoveHash to either whiteHash or blackHash and 
+otherSideHash to the side that is not on move. The hashes store the pieces by the position hash value, (row + 1) * 16 + column. The 
+emptyHash just stores a true boolean by the position hash value. These hashes, at least for me, make reasoning about the program 
+state easy and also manipulating the program state quite simple, with no looping to add or remove pieces. 
+
+
+FEATURE SET
+As discussed above, I split pieces up by black, white, and empty to collectively represent the board state. In this way, I use a 
+variant of piece lists. I implemented alpha-beta pruning within my negamax search. I also implemented Zobrist Keying and 
+Transposition Tables. I also played around with different scoring numbers. Anecdotally, I found that the standard scoring seemed to be 
+sacrificing the queen too often, so I increased her value to 1100 from 900. I also observed through watching game play that pawns 
+are very important in this version of mini-chess, so I increased their value to 200. I also increased the bishop's value to 
+400 from 300, because I noticed knights were not really instrumental in many winning games so I wanted to give bishops a 
+higher value. I implemented iterative deepening with move-ordering by the last iteration's best move and of course move-ordering 
+by score. 
+
+I tried implementing a machine learning solution with the Reinforcement4j java library. With a few more weeks, I think I could 
+implement a variant of this approach. My initial approach was too naive. I tried to directly learn an agent that would make
+legal moves and win games, which proved very slow to learn. However, I would like to try machine learning the piece values 
+as the game progresses. In such a scenario, the agent need not worry about legal moves or even game strategy. All the agent 
+needs to do is accurately approximate piece values based off of board state, maybe a few previous board states, and definitely 
+move counter. Using a reinforcement technique, the agent could learn based off of a cost function that simply rewards actions 
+(which are increasing/decreasing some piece value) based off of the overall game result of a win/loss.
+
+
+PERFORMANCE
+My chess player is reasonably good. I played 3 real players from class. Although I do not know what features they implemented, I 
+did win each of those 3 games. Of course my player can also beat the 1-depth bot. I ran tests to confirm my alpha-beta search 
+returns the same results as full-negamax for the same depth. I also ran tests to confirm that my player has an advantage with 
+transposition tables vs without them. This was a statistical test over 100 games, which resulted in many draws, but over several 
+runs, averaged 6-10 more wins than without transposition tables (the games were ran with only 100 or 200 ms time per move). Of 
+course I tested my program against all of the move generation tests supplied to us and passed them all. I also made 
+several board-state tests and win-in-X-moves tests to confirm correctness. I also performed tracing on my program to verify 
+most activity was within the negamax search and not spent elsewhere.
+
+
+RELIABILITY
+The chess player should be pretty reliable. I did a lot of self-play between feature enhancements and refactors. By allowing 
+things to be toggled on and off, I was able to prove to myself that some change did not hurt performance. I created a Stats
+class to run games X times, say 100, to perform statistical tests. I also had my own set of game states I would test for 
+correctess and also used the move generator tests. Of course I used git to be able to easily revert changes and locate 
+bugs. During my implementation of Zobrist Keying, I instrumented various places in the code to confirm, double confirm, 
+and triple confirm that the board state was in-sync with the expected Zobrist Key (eg, that the key before doMove was the same as the
+key after undoMove, etc). I did have some trouble implementing transposition tables. If there are bugs, they are most likely to 
+reside there. However, I performed some statistical testing to prove to myself that my transposition table implementation indeed 
+helps performance. I also tested exact scores to confirm that the full negamax exact score is the same as the cached one that 
+a transposition table hit would normally return.
+
+Thanks again for a great term and introducing all of us to the fascinating and rewarding world of adversarial search!
